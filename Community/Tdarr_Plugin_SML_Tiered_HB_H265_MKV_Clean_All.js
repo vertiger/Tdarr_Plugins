@@ -55,7 +55,7 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
   }
   // no transcode h264 10bit files
   if (file.ffProbeData.streams[0].profile === "High 10") {
-    response.infoLog += '☒Not processing h264 10bit files! \n';
+    response.infoLog += '☒ Not processing h264 10bit files! \n';
     return response;
   }
 
@@ -74,7 +74,7 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
     bitrate_probe = file.bit_rate;
   }
   if (isNaN(bitrate_probe) || bitrate_probe === null) {
-    response.infoLog += '☒Unable to get video bitrate, not processing! \n';
+    response.infoLog += '☒ Unable to get video bitrate, not processing! \n';
     return response;
   }
 
@@ -83,7 +83,11 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
   var bitrate_limit = tiered[file.video_resolution]
   if (bitrate_target > bitrate_limit) {
     bitrate_target = bitrate_limit;
+  } else {
+    response.infoLog += '☒ Video bitrate below limit, not processing! \n';
+    return response;
   }
+
   response.infoLog += `☑Found video bitrate ${bitrate_probe}, encode for ${bitrate_target}! \n`;
   bitrate_target = Math.floor(bitrate_target / 1000);   // hb takes bitrate as kbps
 
