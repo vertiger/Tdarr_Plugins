@@ -69,11 +69,8 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
   };
 
   // get the source bitrate
-  var bitrate_probe = Number(file.mediaInfo.track[1].BitRate);
-  if (isNaN(bitrate_probe) || bitrate_probe === null) {
-    bitrate_probe = file.bit_rate;
-  }
-  if (isNaN(bitrate_probe) || bitrate_probe === null) {
+  var bitrate_probe = Math.min(Number(file.mediaInfo.track[1].BitRate), Number(file.mediaInfo.track[0].OverallBitRate));
+  if (isNaN(bitrate_probe) || bitrate_probe === null || bitrate_probe === 0) {
     response.infoLog += '☒ Unable to get video bitrate, not processing! \n';
     return response;
   }
