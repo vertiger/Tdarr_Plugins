@@ -69,7 +69,17 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
   };
 
   // get the source bitrate
+  // file.mediaInfo.track[1].BitRate - video track bitrate
+  // Number(file.ffProbeData.streams[0].tags.BPS) - ffprobe tag data
+  // Number(file.ffProbeData.streams[0].tags.BPS['-eng']) -- ffprobe tag data
+  // Number(file.mediaInfo.track[0].OverallBitRate) - file bitrate
   var bitrate_probe = Math.min(Number(file.mediaInfo.track[1].BitRate), Number(file.mediaInfo.track[0].OverallBitRate));
+  if (Number(file.ffProbeData.streams[0].tags.BPS) > 0) {
+    bitrate_probe = Math.min(bitrate_probe, Number(file.ffProbeData.streams[0].tags.BPS))
+  }
+  if (Number(file.ffProbeData.streams[0].tags.BPS['-eng']) > 0) {
+    bitrate_probe = Math.min(bitrate_probe, Number(file.ffProbeData.streams[0].tags.BPS['-eng']))
+  }
   if (isNaN(bitrate_probe) || bitrate_probe === null || bitrate_probe === 0) {
     response.infoLog += '☒ Unable to get video bitrate, not processing! \n';
     return response;
