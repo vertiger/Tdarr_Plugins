@@ -9,7 +9,7 @@
 const details = () => ({
   id: 'H0ae8ArPS',
   Stage: 'Pre-processing',
-  Name: 'Tiered Handbrake H265 encode with audio and subtitles cleaning',
+  Name: 'Tiered Handbrake h265 encode with audio and subtitles cleaning',
   Type: 'Video',
   Operation: 'Transcode',
   Description: `This plugin encodes h264 to h265 (mkv) with handbrake ,
@@ -17,7 +17,7 @@ const details = () => ({
                 black bars are cropped,
                 and removes unwanted audio and subtitle streams.\n\n`,
   Version: '1.00',
-  Tags: 'handbrake,h265,qsv,video only', // Provide tags to categorise your plugin in the plugin browser.Tag options: h265,hevc,h264,nvenc h265,nvenc h264,video only,audio only,subtitle only,handbrake,ffmpeg,radarr,sonarr,pre-processing,post-processing,configurable
+  Tags: 'pre-processing,handbrake,h265,qsv,video only', // Provide tags to categorise your plugin in the plugin browser.Tag options: h265,hevc,h264,nvenc h265,nvenc h264,video only,audio only,subtitle only,handbrake,ffmpeg,radarr,sonarr,pre-processing,post-processing,configurable
 
   Inputs: [],
 });
@@ -25,6 +25,7 @@ const details = () => ({
 // eslint-disable-next-line no-unused-vars
 const plugin = (file, librarySettings, inputs, otherArguments) => {
   const lib = require('../methods/lib')();
+  const proc = require('child_process');
   // load default plugin inputs
   inputs = lib.loadDefaultValues(inputs, details);
 
@@ -74,11 +75,17 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
   // Number(file.ffProbeData.streams[0].tags.BPS['-eng']) -- ffprobe tag data
   // Number(file.mediaInfo.track[0].OverallBitRate) - file bitrate
   var bitrate_probe = Math.min(Number(file.mediaInfo.track[1].BitRate), Number(file.mediaInfo.track[0].OverallBitRate));
-  if (Number(file.ffProbeData.streams[0].tags.BPS) > 0) {
-    bitrate_probe = Math.min(bitrate_probe, Number(file.ffProbeData.streams[0].tags.BPS))
-  }
-  if (Number(file.ffProbeData.streams[0].tags.BPS['-eng']) > 0) {
-    bitrate_probe = Math.min(bitrate_probe, Number(file.ffProbeData.streams[0].tags.BPS['-eng']))
+  try {
+    if (Number(file.ffProbeData.streams[0].tags.BPS) > 0) {
+        bitrate_probe = Math.min(bitrate_probe, Number(file.ffProbeData.streams[0].tags.BPS))
+    }
+    if (Number(file.ffProbeData.streams[0].tags.BPS['-eng']) > 0) {
+        bitrate_probe = Math.min(bitrate_probe, Number(file.ffProbeData.streams[0].tags.BPS['-eng']))
+    }
+  } catch (err) {
+    try {
+      proc.execSync(`mkvpropedit --add-track-statistics-tags "${currentFileName}"`);
+    } catch (err) {}
   }
   if (isNaN(bitrate_probe) || bitrate_probe === null || bitrate_probe === 0) {
     response.infoLog += '☒ Unable to get video bitrate, not processing! \n';
@@ -86,17 +93,15 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
   }
 
   // calculate target bitrate
-  var bitrate_target = Math.floor(bitrate_probe / 2)
-  var bitrate_limit = tiered[file.video_resolution]
-  if (bitrate_target > bitrate_limit) {
-    bitrate_target = bitrate_limit;
-  } else {
+  var bitrate_target = bitrate_probe / 2;
+  var bitrate_limit = tiered[file.video_resolution];
+  if (bitrate_target < bitrate_limit) {
     response.infoLog += '☒ Video bitrate below limit, not processing! \n';
     return response;
   }
-
-  response.infoLog += `☑Found video bitrate ${bitrate_probe}, encode for ${bitrate_target}! \n`;
+  bitrate_target = bitrate_limit;
   bitrate_target = Math.floor(bitrate_target / 1000);   // hb takes bitrate as kbps
+  response.infoLog += `☑ Found video bitrate ${bitrate_probe}, encode for ${bitrate_target} kbps! \n`;
 
   response.preset = `--enable-qsv-decoding --preset-import-file "./qsv.json" --preset "qsv" --vb ${bitrate_target}`;
   response.processFile = true;
