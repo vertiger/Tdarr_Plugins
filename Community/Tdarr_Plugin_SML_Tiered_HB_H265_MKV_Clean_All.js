@@ -25,7 +25,6 @@ const details = () => ({
 // eslint-disable-next-line no-unused-vars
 const plugin = (file, librarySettings, inputs, otherArguments) => {
   const lib = require('../methods/lib')();
-  const proc = require('child_process');
   // load default plugin inputs
   inputs = lib.loadDefaultValues(inputs, details);
 
@@ -82,11 +81,7 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
     if (Number(file.ffProbeData.streams[0].tags.BPS['-eng']) > 0) {
         bitrate_probe = Math.min(bitrate_probe, Number(file.ffProbeData.streams[0].tags.BPS['-eng']))
     }
-  } catch (err) {
-    try {
-      proc.execSync(`mkvpropedit --add-track-statistics-tags "${currentFileName}"`);
-    } catch (err) {}
-  }
+  } catch (err) {}
   if (isNaN(bitrate_probe) || bitrate_probe === null || bitrate_probe === 0) {
     response.infoLog += '☒ Unable to get video bitrate, not processing! \n';
     return response;
@@ -96,14 +91,27 @@ const plugin = (file, librarySettings, inputs, otherArguments) => {
   var bitrate_target = bitrate_probe / 2;
   var bitrate_limit = tiered[file.video_resolution];
   if (bitrate_target < bitrate_limit) {
-    response.infoLog += '☒ Video bitrate below limit, not processing! \n';
+    response.infoLog += `☒ Video bitrate below limit ${bitrate_limit}, target ${bitrate_target}, not processing! \n`;
     return response;
   }
-  bitrate_target = bitrate_limit;
-  bitrate_target = Math.floor(bitrate_target / 1000);   // hb takes bitrate as kbps
-  response.infoLog += `☑ Found video bitrate ${bitrate_probe}, encode for ${bitrate_target} kbps! \n`;
+  // bitrate_target = bitrate_limit;
+  // bitrate_target = Math.floor(bitrate_target / 1000);   // hb takes bitrate as kbps
+  // response.infoLog += `☑ Found video bitrate ${bitrate_probe}, encode for ${bitrate_target} kbps! \n`;
 
-  response.preset = `--enable-qsv-decoding --preset-import-file "./qsv.json" --preset "qsv" --vb ${bitrate_target}`;
+  // response.preset = `--enable-qsv-decoding --preset-import-file "./qsv-vb.json" --preset "qsv-vb" --vb ${bitrate_target}`;
+
+  // recommened handbrake quality rate - https://handbrake.fr/docs/en/latest/workflow/adjust-quality.html
+  var tiered_crf = {
+    "480p":  18,
+    "576p":  18,
+    "720p":  19,
+    "1080p": 19,
+    "4KUHD": 20,
+  };
+ 
+  quality = tiered_crf[file.video_resolution];
+  response.infoLog += `☑ Found video bitrate ${bitrate_probe}, encode for quality ${quality}! \n`;
+  response.preset = `--enable-qsv-decoding --preset-import-file "./qsv-quality.json" --preset "qsv-quality" --quality ${quality}`;
   response.processFile = true;
 
   return response;
