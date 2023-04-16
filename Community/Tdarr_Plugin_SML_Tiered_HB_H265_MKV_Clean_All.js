@@ -9,7 +9,7 @@
 const details = () => ({
   id: 'H0ae8ArPS',
   Stage: 'Pre-processing',
-  Name: 'Tiered Handbrake h265 encode with audio and subtitles cleaning',
+  Name: 'Tiered Handbrake H265 encode with audio and subtitles cleaning',
   Type: 'Video',
   Operation: 'Transcode',
   Description: `This plugin encodes h264 to h265 (mkv) with handbrake ,
@@ -17,7 +17,7 @@ const details = () => ({
                 black bars are cropped,
                 and removes unwanted audio and subtitle streams.\n\n`,
   Version: '1.00',
-  Tags: 'pre-processing,handbrake,h265,qsv,video only', // Provide tags to categorise your plugin in the plugin browser.Tag options: h265,hevc,h264,nvenc h265,nvenc h264,video only,audio only,subtitle only,handbrake,ffmpeg,radarr,sonarr,pre-processing,post-processing,configurable
+  Tags: 'handbrake,h265,qsv,video only', // Provide tags to categorise your plugin in the plugin browser.Tag options: h265,hevc,h264,nvenc h265,nvenc h264,video only,audio only,subtitle only,handbrake,ffmpeg,radarr,sonarr,pre-processing,post-processing,configurable
 
   Inputs: [],
 });
